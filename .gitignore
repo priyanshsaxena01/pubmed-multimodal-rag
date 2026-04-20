@@ -1,0 +1,16 @@
+# Ignore vector databases and document stores
+data/
+
+# Ignore Python caches and environments
+__pycache__/
+*.pyc
+venv/
+
+# Ignore massive AI model weights and logs
+qwen-adapter/
+qwen-pubmed-merged/
+wandb/
+tea_debug.log
+
+# Ignore environment variables
+.env
