@@ -1,7 +1,3 @@
-Here is your fully updated and polished `README.md`. I have stripped out the artificial `[cite]` tags from your original text to make it clean, preserved all your core component descriptions, and seamlessly integrated the new Hybrid Cloud Architecture, Dockerization, and Cloudflare tunnel deployment strategies.
-
------
-
 # PubMed Multimodal RAG 🩺
 
 ## Overview
