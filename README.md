@@ -9,25 +9,20 @@
 
 ## 🔗 Project Links
 
-- 🤗 **Fine-Tuned Model (Hugging Face):**  
-  https://huggingface.co/b22ee075/Qwen3-VL-4B-PubMed  
+- 🤗 **Fine-Tuned Model (Hugging Face):**  https://huggingface.co/b22ee075/Qwen3-VL-4B-PubMed  
 
-- 📊 **Dataset: PubMedVision-Enhanced:**
-  [alvinl29/PubMedVision-enhanced](https://huggingface.co/datasets/alvinl29/PubMedVision-enhanced)
+- 📊 **Dataset: PubMedVision-Enhanced:** [alvinl29/PubMedVision-enhanced](https://huggingface.co/datasets/alvinl29/PubMedVision-enhanced)
 
 - 🧠 **Original Qwen Models:**
   - Qwen3-VL-4B-Instruct: https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct  
   - Qwen3-VL-Embedding-2B: https://huggingface.co/Qwen/Qwen3-VL-Embedding-2B  
   - Qwen3-VL-Reranker-2B: https://huggingface.co/Qwen/Qwen3-VL-Reranker-2B  
 
-- 📊 **Weights & Biases Training Logs:**  
-  [Wandb Link](https://wandb.ai/priyansh-saxena/pubmed-multimodal-rag/workspace)
+- 📊 **Weights & Biases Training Logs:**  [Wandb Link](https://wandb.ai/priyansh-saxena/pubmed-multimodal-rag/workspace)
 
-- 🌐 **Render Deployment:**  
-  [Render Link](https://pubmed-rag-ui-v1.onrender.com/)
+- 🌐 **Render Deployment:**  [Render Link](https://pubmed-rag-ui-v1.onrender.com/)
 
-- ☁️ **GCP / Kubernetes Endpoint:**  
-  [GCP_Loadbalancer_IP](http://34.100.147.140/)
+- ☁️ **GCP / Kubernetes Endpoint:**  [GCP_Loadbalancer_IP](http://34.100.147.140/)
 
 - **Demo Videos:**  [Drive Link](https://drive.google.com/drive/folders/1lDU6YhFAyrxizAlLfIDNMCY8Z2HvlfQP)
 ---
