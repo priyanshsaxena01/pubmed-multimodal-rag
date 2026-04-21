@@ -24,7 +24,7 @@
 
 - ☁️ **GCP / Kubernetes Endpoint:**  [GCP_Loadbalancer_IP](http://34.100.147.140/)
 
-- **Demo Videos:**  [Drive Link](https://drive.google.com/drive/folders/1lDU6YhFAyrxizAlLfIDNMCY8Z2HvlfQP)
+- 📹 **Demo Videos:**  [Drive Link](https://drive.google.com/drive/folders/1lDU6YhFAyrxizAlLfIDNMCY8Z2HvlfQP)
 ---
 
 ## Overview
