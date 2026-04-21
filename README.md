@@ -1,9 +1,8 @@
 # PubMed Multimodal RAG - DomainBot 🩺
 ## ML-DL-Ops 
 
-**Name:** Priyansh Saxena , Anchitya Kumar
-
-**Roll Number:** B22EE075 , B22BB009
+**Member 1 -** Priyansh Saxena - B22EE075
+**Member 2 -** Anchitya Kumar - B22BB009
 
 ---
 
@@ -18,13 +17,13 @@
   - Qwen3-VL-Reranker-2B: https://huggingface.co/Qwen/Qwen3-VL-Reranker-2B  
 
 - 📊 **Weights & Biases Training Logs:**  
-  [WANDB_RUN_LINK](https://wandb.ai/priyansh-saxena/pubmed-multimodal-rag/workspace)
+  [Wandb Link](https://wandb.ai/priyansh-saxena/pubmed-multimodal-rag/workspace)
 
 - 🌐 **Live Deployment (Render):**  
-  [RENDER_APP_LINK](https://pubmed-rag-ui-v1.onrender.com/)
+  [Render Link](https://pubmed-rag-ui-v1.onrender.com/)
 
 - ☁️ **GCP / Kubernetes Endpoint:**  
-  [GCP_LOADBALANCER_IP_OR_URL](http://34.100.147.140/)
+  [GCP_Loadbalancer_IP](http://34.100.147.140/)
 
 ---
 
