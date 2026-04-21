@@ -1,5 +1,9 @@
 # PubMed Multimodal RAG 🩺
 
+
+
+[Hugging-Face Finetuned Qwen3-VL-4B-PubMed](https://huggingface.co/b22ee075/Qwen3-VL-4B-PubMed)
+
 ## Overview
 
 This repository contains the codebase for a highly advanced clinical AI assistant fine-tuned on PubMed literature. Its primary function is to assist medical professionals by analyzing clinical notes, extracting literature context, and evaluating medical imaging. The system implements a dynamic Retrieval-Augmented Generation (RAG) architecture capable of processing mixed media inputs, including text and images, into a cohesive knowledge base.
