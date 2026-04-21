@@ -1,5 +1,5 @@
 # PubMed Multimodal RAG - DomainBot 🩺
-## ML-DL-Ops 
+## ML-DL-Ops Course Project
 
 **Member 1 -** Priyansh Saxena - B22EE075
 
