@@ -44,45 +44,190 @@ This repository contains the codebase for a highly advanced clinical AI assistan
 
 ---
 
-## System Architecture & Components
+## 🏗️ System Architecture & Components
 
-The project consists of several independent but heavily integrated components separated into a backend compute environment and a frontend cloud environment:
+The system is composed of five deeply integrated layers spanning two distinct compute environments: a **cloud frontend** (stateless, GPU-free, publicly accessible) and a **DGX backend** (stateful, multi-GPU, institutionally firewalled). Communication between these environments is tunnelled securely via Cloudflare.
+
+### End-to-End Request Flow
+
+```
+User (Browser)
+    │
+    ▼
+[1] Streamlit Frontend (frontend.py)
+    │  ── HTTP POST /query (with optional image) ──►
+    ▼
+[2] FastAPI Orchestrator (orchestrator.py)
+    │
+    ├── PDF/Image upload? ──► PyMuPDF extraction ──► Text chunks + embedded images
+    │                                                          │
+    │                                                          ▼
+    │                                                  FAISS Vector Index
+    │
+    ├── /embed ──► Support APIs (DGX GPU 1) ──► Qwen3-VL-Embedding-2B
+    │
+    ├── /rerank ──► Support APIs (DGX GPU 1) ──► Qwen3-VL-Reranker-2B
+    │              (top-3 chunks selected)
+    │
+    └── Final prompt (system prompt + retrieved context + images + user query)
+             │
+             ▼
+    [3] LMDeploy Engine (DGX GPU 0)
+             │  Qwen3-VL-4B-Instruct (LoRA-merged, PubMed fine-tuned)
+             ▼
+    Streaming token response ──► Orchestrator ──► Frontend (SSE/stream)
+             │
+             ▼
+    User sees response in chat UI
+```
+
+---
 
 ### 1. Frontend (`frontend.py`)
 
-* Built using Streamlit to provide an intuitive web interface titled "PubMed AI".
-* Features a sidebar that supports multi-file document indexing and medical image uploads.
-* Maintains a chat interface that communicates with a backend API for streaming text responses.
-* Containerized via Docker for cloud-agnostic deployment.
+The frontend is a **Streamlit** application that serves as the sole user-facing interface. It is intentionally kept stateless and lightweight — it holds no model weights and performs no heavy computation, making it trivially deployable on free-tier cloud services.
+
+**Interface layout:**
+
+- **Sidebar (Knowledge Base Management)**:
+  - Multi-file uploader accepting `.pdf`, `.txt`, `.png`, `.jpg`, `.jpeg`.
+  - On upload, files are `POST`-ed to the orchestrator's `/index` endpoint, which triggers extraction and embedding in the background.
+  - A "Vision Scan" panel allows uploading medical images separately for image-only visual queries, displayed as a thumbnail grid before querying.
+  - Session state tracks all indexed documents and images within a conversation.
+
+- **Main Chat Panel**:
+  - Standard chat history display with user/assistant message bubbles.
+  - Sends the user message (plus any attached images) to the orchestrator's `/query` endpoint.
+  - Handles **streaming responses** via server-sent events — tokens are written to the UI incrementally as they arrive from the DGX, giving a responsive feel despite long-context generation.
+  - Displays an inline "Sources" expander below each assistant reply, listing which retrieved chunks informed the answer (chunk text preview + source filename + page number).
+
+**Containerization:** Packaged as `docker.io/priyanshsaxena1/pubmed-rag-ui:v1`. The image contains only the Python dependencies for Streamlit and HTTP requests — no ML libraries, no GPU drivers. The two required environment variables (`VLLM_API_URL`, `INFERENCE_API_URL`) point it at the DGX tunnels at runtime.
+
+---
 
 ### 2. Orchestrator (`orchestrator.py`)
 
-* A FastAPI backend that orchestrates the entire RAG pipeline.
-* Extracts both text chunks and images directly from uploaded PDFs using `fitz` (PyMuPDF).
-* Manages a `faiss` vector database to store and search through chunk embeddings.
-* Calls the Inference API for embeddings and reranking scores, selectively filtering the top 3 most relevant context blocks.
-* Formats the final query encompassing the clinical system prompt, retrieved documents, images, and user prompt before routing securely to the DGX GPU server.
+The orchestrator is the **central nervous system** of the RAG pipeline. It is a **FastAPI** application running inside the same Docker container as the frontend (on port `5000`, internal to the container). It coordinates every step from document ingestion through to final prompt assembly.
 
-### 3. Support APIs (`support_apis.py`) [Runs on DGX]
+#### 2a. Document Ingestion & Parsing
 
-* A dedicated FastAPI microservice managing the vision-language retrieval models.
-* **`/embed` Endpoint**: Converts incoming text strings or base64-encoded images into numerical vectors using the Qwen3-VL embedding model.
-* **`/rerank` Endpoint**: Re-scores a list of candidate documents against a given query using the Qwen3-VL reranker.
+When a file is uploaded, the orchestrator uses **PyMuPDF (`fitz`)** to handle both text and visual content extraction from PDFs:
+
+- **Text extraction**: Each PDF page is parsed into raw text, then split into overlapping chunks (configurable chunk size / stride) to preserve context across chunk boundaries. Plain `.txt` files are chunked directly.
+- **Embedded image extraction**: `fitz` iterates over every PDF page's image list (`page.get_images()`), decodes each XObject image, and saves it as a base64 PNG. These images are treated as first-class retrieval candidates alongside text chunks — a page diagram or MRI scan embedded in a paper can be retrieved and passed to the vision-language model.
+- **Metadata tagging**: Every chunk and image is tagged with its source filename and page number, enabling accurate citation in the final response.
+
+#### 2b. Embedding & FAISS Indexing
+
+After chunking, each text chunk and image is embedded via a call to the `/embed` endpoint on the Support APIs (see §3). The returned float vectors are added to a **FAISS `IndexFlatIP` (inner product) index** held in memory:
+
+- Text and image embeddings share the same vector space, since `Qwen3-VL-Embedding-2B` is trained to produce modality-aligned representations.
+- The FAISS index is rebuilt from scratch on each new upload (suitable for session-scoped knowledge bases). Persistent cross-session indexing can be enabled by serializing with `faiss.write_index`.
+- Chunk metadata (text, source, page, modality) is stored in a parallel Python list indexed identically to the FAISS vectors, allowing O(1) lookup after a search.
+
+#### 2c. Query-Time Retrieval & Reranking
+
+On each user query:
+
+1. The query text (and optional query image) is embedded via `/embed`.
+2. FAISS performs an approximate nearest-neighbour search, returning the top-K candidates (default K=10).
+3. The top-K candidates are passed to `/rerank` along with the query. The reranker scores each candidate's relevance more precisely using cross-attention over the full query–document pair.
+4. The top 3 reranked candidates are selected as the final retrieved context. This two-stage retrieval (fast ANN → precise reranker) balances speed with retrieval quality.
+
+#### 2d. Prompt Assembly & LLM Routing
+
+The orchestrator constructs the final multimodal prompt:
+
+```
+[SYSTEM PROMPT — clinical constraints, output format rules]
+[RETRIEVED CONTEXT BLOCK 1 — text or image]
+[RETRIEVED CONTEXT BLOCK 2]
+[RETRIEVED CONTEXT BLOCK 3]
+[USER QUERY — text + optional image]
+```
+
+This assembled prompt is forwarded to the **LMDeploy** OpenAI-compatible API endpoint running on DGX GPU 0 (via Cloudflare tunnel). The response is streamed back token-by-token to the frontend.
+
+---
+
+### 3. Support APIs (`support_apis.py`) — Runs on DGX GPU 1
+
+A dedicated **FastAPI microservice** running on DGX GPU 1 that hosts the two retrieval models. It is kept separate from the generation engine (GPU 0) to avoid VRAM contention and to allow independent scaling or swapping of retrieval models.
+
+#### `/embed` — Multimodal Embedding Endpoint
+
+- **Model**: `Qwen3-VL-Embedding-2B` loaded via the `qwen3_vl_wrapper` submodule.
+- **Input**: JSON body with either a `text` string or a `image` field (base64-encoded PNG/JPEG).
+- **Processing**: The model's vision encoder processes images; the language encoder processes text. Both produce vectors in the same shared latent space — enabling cross-modal similarity search.
+- **Output**: A flat float array (the embedding vector). Dimensionality is model-dependent (~1536d).
+- **Batching**: Accepts a list of inputs for batch embedding, which the orchestrator uses during document indexing to reduce round-trip overhead.
+
+#### `/rerank` — Cross-Modal Reranking Endpoint
+
+- **Model**: `Qwen3-VL-Reranker-2B`, a cross-encoder that jointly encodes the query and each candidate document to produce a relevance score.
+- **Input**: A `query` (text + optional image) and a list of `candidates` (text snippets or image base64 strings).
+- **Processing**: Unlike the bi-encoder embedding model, the reranker performs full cross-attention between query and each candidate — significantly more accurate but also more compute-intensive, which is why it operates only on the pre-filtered top-K FAISS results.
+- **Output**: A list of float relevance scores, one per candidate. The orchestrator sorts by score and retains the top 3.
+
+---
 
 ### 4. Training Pipeline (`train.py`)
 
-* Implements a LoRA fine-tuning script for `Qwen/Qwen3-VL-4B-Instruct` using `peft` and 4-bit `BitsAndBytesConfig` quantization.
-* Features an active data cleaning step for the `PubMedVision-enhanced` dataset to safely parse and drop corrupted JSON arrays or empty rows.
-* Includes strict memory optimizations such as limiting image resolution (max pixels), enabling gradient checkpointing, and utilizing an 8-bit paged AdamW optimizer to prevent VRAM crashes.
+The custom fine-tuning script that produced the `Qwen3-VL-4B-PubMed` model weights. It is not required for inference but is included for full reproducibility.
+
+#### Dataset
+
+- **Base dataset**: `PubMedVision-enhanced` — a curated collection of PubMed figure–caption pairs and clinical VQA examples, augmented with structured reasoning traces (`PubMedVision-enhanced-z000` variant).
+- **Data cleaning**: The script includes an active preprocessing step that parses each row's JSON fields and drops any rows with corrupted arrays, null fields, or malformed image references. This is critical because the raw PubMed dataset contains a non-trivial fraction of broken entries that cause silent training failures.
+
+#### Fine-Tuning Strategy
+
+- **Method**: **LoRA (Low-Rank Adaptation)** via the `peft` library. Rather than updating all 4B parameters, LoRA injects small trainable rank-decomposition matrices into the attention layers. This drastically reduces VRAM usage and training time while preserving most of the base model's general reasoning.
+- **Quantization**: The base model is loaded in **4-bit NF4** precision (`BitsAndBytesConfig`) to fit on a single DGX GPU during training. The LoRA adapters themselves are trained in `bfloat16`.
+- **Optimizer**: **8-bit paged AdamW** (`optim="paged_adamw_8bit"`) — the "paged" variant offloads optimizer states to CPU RAM when GPU memory pressure is high, preventing out-of-memory crashes on long sequences.
+
+#### Memory Optimizations
+
+| Optimization | Purpose |
+|---|---|
+| 4-bit NF4 base model quantization | Reduces base model VRAM from ~16 GB to ~4 GB |
+| LoRA adapters only | ~10–50 MB of trainable params vs. 8 GB for full fine-tune |
+| `max_pixels` image cap | Prevents VRAM spikes from very high-res figures |
+| Gradient checkpointing | Trades compute for memory during backprop |
+| 8-bit paged AdamW | CPU-offloaded optimizer states |
+
+#### Training Outputs
+
+After training, LoRA adapter weights are saved to `b22ee075/Qwen3-VL-4B-PubMed` (HuggingFace Hub). These are merged into the base model by `merge_lora.py` before serving.
+
+---
 
 ### 5. Utility & Patch Scripts
 
-* **`merge_lora.py`**: Merges the fine-tuned LoRA weights (`b22ee075/Qwen3-VL-4B-PubMed`) back into the base Qwen3-VL-4B model and saves the baked weights locally.
-* **`patch_system_prompt.py`**: Dynamically edits the orchestrator file to inject a rigorous, clinical system prompt demanding objective tones and strict contextual grounding.
-* **`patch_vllm.py`**: Adjusts the local `vllm` package configuration to remove strict assertion errors regarding rope scaling parameters.
-* **`patch_wrapper.py`**: Uses Regex to aggressively patch the AutoProcessor paths in the Qwen3-VL reranker repository to ensure proper model routing.
+A set of targeted scripts that handle model preparation and environment compatibility.
 
----
+#### `merge_lora.py` — LoRA Weight Merging
+
+After fine-tuning, the LoRA adapter weights exist as a separate delta on top of the base model. `merge_lora.py` uses `peft`'s `merge_and_unload()` to arithmetically fold the adapter weights into the base model's weight matrices, producing a single standalone model (`./qwen-pubmed-merged`). This merged model is then served directly by LMDeploy without requiring `peft` at inference time — simplifying the serving stack and slightly improving throughput.
+
+#### `patch_system_prompt.py` — Clinical Prompt Injection
+
+Dynamically rewrites the system prompt string inside `orchestrator.py` to enforce strict clinical behaviour:
+- Answers must be grounded in retrieved context only.
+- If the context does not contain enough information to answer, the model must say so explicitly.
+- Output is formatted as objective, numbered bullet points.
+- The model must never provide a definitive diagnosis.
+
+This patching approach allows prompt iteration without modifying the orchestrator's core logic.
+
+#### `patch_vllm.py` — vLLM RoPE Scaling Compatibility Fix
+
+The Qwen3-VL model uses a non-standard RoPE (Rotary Position Embedding) scaling configuration that triggers assertion errors in certain versions of `vllm`. This script locates the relevant validation function inside the installed `vllm` package and comments out the offending assertion, allowing the model to serve correctly. A targeted one-line fix that avoids the need to maintain a custom `vllm` fork.
+
+#### `patch_wrapper.py` — Reranker AutoProcessor Path Fix
+
+The `Qwen3-VL-Reranker-2B` model repository uses relative import paths for `AutoProcessor` that break when the `qwen3_vl_wrapper` submodule is loaded outside its own working directory. This script uses regex substitution to rewrite those paths to absolute references, ensuring the reranker initializes correctly regardless of where the orchestrator is invoked from.
+
 
 ## Submodule: Qwen3-VL Wrapper (`qwen3_vl_wrapper/`)
 
