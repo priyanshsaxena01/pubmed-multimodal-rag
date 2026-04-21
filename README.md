@@ -13,7 +13,7 @@
   https://huggingface.co/b22ee075/Qwen3-VL-4B-PubMed  
 
 - 📊 **Dataset: PubMedVision-Enhanced**
-> [alvinl29/PubMedVision-enhanced](https://huggingface.co/datasets/alvinl29/PubMedVision-enhanced)
+  [alvinl29/PubMedVision-enhanced](https://huggingface.co/datasets/alvinl29/PubMedVision-enhanced)
 
 - 🧠 **Original Qwen Models:**
   - Qwen3-VL-4B-Instruct: https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct  
