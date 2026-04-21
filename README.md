@@ -1,102 +1,120 @@
-
-# Qwen3-VL PubMed Multimodal RAG Pipeline
-
-An end-to-end Medical Visual Question Answering (VQA) and Multimodal Retrieval-Augmented Generation (RAG) system. This project leverages a custom-fine-tuned **Qwen3-VL-4B-Instruct** model, grounded in clinical literature and medical imaging from PubMed.
-
-It features a unique **Hybrid Cloud Architecture**, isolating heavy multi-GPU inference on institutional hardware (NVIDIA DGX) while serving a highly available, low-latency Streamlit frontend via the public cloud.
+Here is your fully updated and polished `README.md`. I have stripped out the artificial `[cite]` tags from your original text to make it clean, preserved all your core component descriptions, and seamlessly integrated the new Hybrid Cloud Architecture, Dockerization, and Cloudflare tunnel deployment strategies.
 
 -----
 
-## Hybrid Cloud Architecture
+# PubMed Multimodal RAG 🩺
 
-To optimize compute costs and bypass restrictive university firewalls, this project splits the processing pipeline across two distinct environments bridged by secure tunnels.
+## Overview
 
-1.  **The Compute Backend (NVIDIA DGX Server)**
+This repository contains the codebase for a highly advanced clinical AI assistant fine-tuned on PubMed literature. Its primary function is to assist medical professionals by analyzing clinical notes, extracting literature context, and evaluating medical imaging. The system implements a dynamic Retrieval-Augmented Generation (RAG) architecture capable of processing mixed media inputs, including text and images, into a cohesive knowledge base.
 
-      - Houses the massive GPU requirements for the VLM.
-      - Runs the **LMDeploy** inference engine for the fine-tuned Qwen3-VL model.
-      - Runs **Support APIs** for multimodal embedding generation.
-      - Exposed securely to the internet via **Cloudflare Quick Tunnels**.
+## Features
 
-2.  **The Cloud Frontend (Render / Docker)**
-
-      - A lightweight Docker container hosting the **Streamlit UI** and **FastAPI Orchestrator**.
-      - Manages the **FAISS Vector Database** and document chunking (PyMuPDF).
-      - Routes user text and image queries to the DGX server over the Cloudflare tunnels.
+  * **Dynamic Multimodal RAG**: Allows users to upload clinical notes (PDF, TXT) and medical images (PNG, JPG, JPEG) to dynamically update the system's knowledge base.
+  * **Vision Scan**: Enables users to process and view multiple medical images for visual queries.
+  * **Advanced Embeddings & Reranking**: Utilizes `Qwen3-VL-Embedding-2B` for generating multimodal embeddings and `Qwen3-VL-Reranker-2B` for high-precision document reranking.
+  * **Strict Clinical Constraints**: The AI is strictly programmed to base answers on the extracted context, state if an answer cannot be determined, output clear bullet points, and refrain from providing definitive medical diagnoses.
+  * **Custom Fine-Tuned Model**: The core generation engine is built on the `Qwen3-VL-4B-Instruct` architecture and fine-tuned specifically on the `PubMedVision-enhanced-z000` dataset.
+  * **Hybrid Cloud Architecture**: Isolates heavy multi-GPU inference on institutional DGX hardware while serving a highly available, low-latency Streamlit frontend via the public cloud (Render/Docker Hub).
 
 -----
 
-## Key Features
+## 🏗️ System Architecture & Components
 
-  - **Multimodal Understanding:** Processes both complex clinical text queries and medical imagery (diagrams, scans, figures).
-  - **PubMed Grounding:** Utilizes a FAISS-backed RAG pipeline to retrieve relevant medical literature before generating responses, reducing hallucinations.
-  - **LoRA Fine-Tuned:** The base Qwen3-VL model was fine-tuned for \~8 hours on specialized medical QA pairs.
-  - **Cloud-Agnostic UI:** The frontend is fully containerized and deployable on any cloud provider (Azure, Render, AWS) without region locks.
+The project consists of several independent but heavily integrated components separated into a backend compute environment and a frontend cloud environment:
+
+### 1\. Frontend (`frontend.py`)
+
+  * Built using Streamlit to provide an intuitive web interface titled "PubMed AI".
+  * Features a sidebar that supports multi-file document indexing and medical image uploads.
+  * Maintains a chat interface that communicates with a backend API for streaming text responses.
+  * Containerized via Docker for cloud-agnostic deployment.
+
+### 2\. Orchestrator (`orchestrator.py`)
+
+  * A FastAPI backend that orchestrates the entire RAG pipeline.
+  * Extracts both text chunks and images directly from uploaded PDFs using `fitz` (PyMuPDF).
+  * Manages a `faiss` vector database to store and search through chunk embeddings.
+  * Calls the Inference API for embeddings and reranking scores, selectively filtering the top 3 most relevant context blocks.
+  * Formats the final query encompassing the clinical system prompt, retrieved documents, images, and user prompt before routing securely to the DGX GPU server.
+
+### 3\. Support APIs (`support_apis.py`) [Runs on DGX]
+
+  * A dedicated FastAPI microservice managing the vision-language retrieval models.
+  * **`/embed` Endpoint**: Converts incoming text strings or base64-encoded images into numerical vectors using the Qwen3-VL embedding model.
+  * **`/rerank` Endpoint**: Re-scores a list of candidate documents against a given query using the Qwen3-VL reranker.
+
+### 4\. Training Pipeline (`train.py`)
+
+  * Implements a LoRA fine-tuning script for `Qwen/Qwen3-VL-4B-Instruct` using `peft` and 4-bit `BitsAndBytesConfig` quantization.
+  * Features an active data cleaning step for the `PubMedVision-enhanced` dataset to safely parse and drop corrupted JSON arrays or empty rows.
+  * Includes strict memory optimizations such as limiting image resolution (max pixels), enabling gradient checkpointing, and utilizing an 8-bit paged AdamW optimizer to prevent VRAM crashes.
+
+### 5\. Utility & Patch Scripts
+
+  * **`merge_lora.py`**: Merges the fine-tuned LoRA weights (`b22ee075/Qwen3-VL-4B-PubMed`) back into the base Qwen3-VL-4B model and saves the baked weights locally.
+  * **`patch_system_prompt.py`**: Dynamically edits the orchestrator file to inject a rigorous, clinical system prompt demanding objective tones and strict contextual grounding.
+  * **`patch_vllm.py`**: Adjusts the local `vllm` package configuration to remove strict assertion errors regarding rope scaling parameters.
+  * **`patch_wrapper.py`**: Uses Regex to aggressively patch the AutoProcessor paths in the Qwen3-VL reranker repository to ensure proper model routing.
 
 -----
 
-## Repository Structure
+## 📂 Submodule: Qwen3-VL Wrapper (`qwen3_vl_wrapper/`)
 
-```text
-├── qwen-pubmed-merged/       # (Ignored) Merged VLM weights
-├── data/                     # (Ignored) FAISS vector indexes and PDF corpus
-├── orchestrator.py           # FastAPI backend handling RAG logic and FAISS retrieval
-├── frontend.py               # Streamlit user interface
-├── support_apis.py           # Embedding generation API (Runs on DGX)
-├── start_services.sh         # Master script to boot DGX tmux sessions
-├── Dockerfile                # Cloud container instructions for UI/Orchestrator
-└── README.md                 # Project documentation
-```
+The project bundles the official Qwen3-VL-Embedding and Reranker tools for local usage.
+
+  * Designed to process text, images, screenshots, videos, and mixed-modal inputs within a unified framework.
+  * Includes comprehensive scripts for evaluating performance on major datasets (e.g., ImageNet, DocVQA, MSCOCO).
+  * Contains example Jupyter Notebooks (`embedding_vllm.ipynb`, `Qwen3VL_Multimodal_RAG.ipynb`) to demonstrate retrieval logic.
 
 -----
 
-## Deployment Guide
+## 🚀 Deployment Guide
 
-### Phase 1: Start the DGX Compute Backend
+This system uses a **Hybrid Cloud** approach to bypass institutional firewalls. The LLMs run on a secure NVIDIA DGX server, while the UI is hosted publicly on the cloud.
+
+### Phase 1: DGX Compute Backend
 
 The backend requires a Linux environment with NVIDIA GPUs and CUDA configured.
 
-1.  Clone the repository on the DGX server.
-2.  Install dependencies:
+1.  SSH into the DGX server and activate your Conda environment:
     ```bash
-    conda create -n pubmed_env python=3.10
     conda activate pubmed_env
-    pip install lmdeploy vllm fastapi uvicorn
     ```
-3.  Start the AI engines using `tmux`:
+2.  Start the AI engines using `tmux`:
     ```bash
     # Start Support APIs (Embeddings) on GPU 1
     tmux new -d -s support_api "CUDA_VISIBLE_DEVICES=1 python support_apis.py"
 
     # Start LMDeploy Engine on GPU 0
-    tmux new -d -s lmdeploy_engine "CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server ./qwen-pubmed-merged --model-name pubmed-adapter --server-port 8000 --cache-max-entry-count 0.8"
+    tmux new -d -s lmdeploy_engine "CUDA_VISIBLE_DEVICES=0 lmdeploy serve api_server ./qwen-pubmed-merged --model-name pubmed-adapter --server-port 8000"
     ```
-4.  Open the Cloudflare Tunnels to bridge the DGX to the internet:
+3.  Open **Cloudflare Quick Tunnels** to bridge the DGX to the internet securely:
     ```bash
     tmux new -d -s tunnel_vllm "./cloudflared-linux-amd64 tunnel --url http://localhost:8000 > tunnel_vllm.log 2>&1"
     tmux new -d -s tunnel_support "./cloudflared-linux-amd64 tunnel --url http://localhost:8001 > tunnel_support.log 2>&1"
     ```
-5.  Extract your secure URLs from the logs:
+4.  Extract your secure URLs from the logs:
     ```bash
     cat tunnel_vllm.log | grep -o 'https://[^[:space:]]*\.trycloudflare\.com'
     cat tunnel_support.log | grep -o 'https://[^[:space:]]*\.trycloudflare\.com'
     ```
 
-### Phase 2: Deploy the Cloud Frontend
+### Phase 2: Cloud Frontend Deployment
 
-The frontend is packaged as a Docker image and can be deployed anywhere. It requires the URLs generated in Phase 1.
+The frontend is packaged as a Docker image (`docker.io/priyanshsaxena1/pubmed-rag-ui:v1`) and can be deployed anywhere without needing GPUs.
 
-**Option A: Deploy via Render (Recommended/Zero-Friction)**
+**Zero-Friction Deployment (Render)**
 
-1.  Ensure your image is pushed to Docker Hub (e.g., `docker.io/priyanshsaxena1/pubmed-rag-ui:v1`).
-2.  Go to [Render.com](https://render.com) -\> New Web Service.
-3.  Select "Deploy an existing image from a registry" and paste your Docker Hub URL.
-4.  Under "Advanced", add the necessary Environment Variables:
+1.  Go to [Render.com](https://render.com) and click **New Web Service**.
+2.  Select **Deploy an existing image from a registry** and paste: `docker.io/priyanshsaxena1/pubmed-rag-ui:v1`.
+3.  Under **Advanced**, add the Cloudflare URLs you generated in Phase 1 as Environment Variables so the UI knows where your DGX is:
       - `VLLM_API_URL`: `<YOUR_CLOUDFLARE_VLLM_URL>`
       - `INFERENCE_API_URL`: `<YOUR_CLOUDFLARE_SUPPORT_URL>`
-5.  Deploy to access the live web UI.
+4.  Deploy to access the live web UI.
 
-**Option B: Deploy Locally (For Development)**
+**Local Testing Deployment**
+If you want to run the UI locally on your personal computer instead of the cloud:
 
 ```bash
 # Set environment variables locally
@@ -109,12 +127,6 @@ python orchestrator.py &
 # Start the Streamlit UI
 streamlit run frontend.py --server.port=80
 ```
-
------
-
-## Model Information
-
-For comprehensive details on training hyperparameters, evaluation metrics, and dataset curation, please view the [Model Card](https://huggingface.co/) for this project.
 
 -----
 
