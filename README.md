@@ -20,7 +20,7 @@
 - 📊 **Weights & Biases Training Logs:**  
   [Wandb Link](https://wandb.ai/priyansh-saxena/pubmed-multimodal-rag/workspace)
 
-- 🌐 **Live Deployment (Render):**  
+- 🌐 **Render Deployment:**  
   [Render Link](https://pubmed-rag-ui-v1.onrender.com/)
 
 - ☁️ **GCP / Kubernetes Endpoint:**  
@@ -219,10 +219,6 @@ Dynamically rewrites the system prompt string inside `orchestrator.py` to enforc
 - The model must never provide a definitive diagnosis.
 
 This patching approach allows prompt iteration without modifying the orchestrator's core logic.
-
-#### `patch_vllm.py` — vLLM RoPE Scaling Compatibility Fix
-
-The Qwen3-VL model uses a non-standard RoPE (Rotary Position Embedding) scaling configuration that triggers assertion errors in certain versions of `vllm`. This script locates the relevant validation function inside the installed `vllm` package and comments out the offending assertion, allowing the model to serve correctly. A targeted one-line fix that avoids the need to maintain a custom `vllm` fork.
 
 #### `patch_wrapper.py` — Reranker AutoProcessor Path Fix
 
