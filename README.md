@@ -2,6 +2,7 @@
 ## ML-DL-Ops 
 
 **Name:** Priyansh Saxena , Anchitya Kumar
+
 **Roll Number:** B22EE075 , B22BB009
 
 ---
@@ -17,13 +18,13 @@
   - Qwen3-VL-Reranker-2B: https://huggingface.co/Qwen/Qwen3-VL-Reranker-2B  
 
 - 📊 **Weights & Biases Training Logs:**  
-  [<WANDB_RUN_LINK>](https://wandb.ai/priyansh-saxena/pubmed-multimodal-rag/workspace)
+  [WANDB_RUN_LINK](https://wandb.ai/priyansh-saxena/pubmed-multimodal-rag/workspace)
 
 - 🌐 **Live Deployment (Render):**  
-  [<RENDER_APP_LINK>](https://pubmed-rag-ui-v1.onrender.com/)
+  [RENDER_APP_LINK](https://pubmed-rag-ui-v1.onrender.com/)
 
 - ☁️ **GCP / Kubernetes Endpoint:**  
-  [<GCP_LOADBALANCER_IP_OR_URL>](http://34.100.147.140/)
+  [GCP_LOADBALANCER_IP_OR_URL](http://34.100.147.140/)
 
 ---
 
