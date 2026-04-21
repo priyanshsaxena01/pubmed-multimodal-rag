@@ -12,6 +12,9 @@
 - 🤗 **Fine-Tuned Model (Hugging Face):**  
   https://huggingface.co/b22ee075/Qwen3-VL-4B-PubMed  
 
+- 📊 **Dataset: PubMedVision-Enhanced**
+> [alvinl29/PubMedVision-enhanced](https://huggingface.co/datasets/alvinl29/PubMedVision-enhanced)
+
 - 🧠 **Original Qwen Models:**
   - Qwen3-VL-4B-Instruct: https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct  
   - Qwen3-VL-Embedding-2B: https://huggingface.co/Qwen/Qwen3-VL-Embedding-2B  
@@ -199,6 +202,37 @@ The custom fine-tuning script that produced the `Qwen3-VL-4B-PubMed` model weigh
 #### Training Outputs
 
 After training, LoRA adapter weights are saved to `b22ee075/Qwen3-VL-4B-PubMed` (HuggingFace Hub). These are merged into the base model by `merge_lora.py` before serving.
+
+---
+
+## Dataset: PubMedVision-Enhanced
+
+The fine-tuning dataset is `PubMedVision-enhanced`, a large-scale multimodal medical dataset sourced from PubMed figure–caption pairs and structured clinical Visual Question Answering (VQA) examples. The specific subset used for training is `z000` — the first of 20 available subsets — selected for its diversity of body-part coverage and question style.
+
+### Dataset Statistics
+
+| Property | Value |
+|---|---|
+| Total rows (full dataset) | 1,009,700 |
+| Total file size | 59.4 GB |
+| Format | Parquet (auto-converted) |
+| Modalities | Image + Text |
+| Subsets | 20 (z000 – z019) |
+| Subset used for training | `z000` — 50,500 rows |
+| Downloads last month | 31 |
+
+### Schema
+
+Each row in the dataset contains four fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Unique identifier, e.g. `Alignment_VQA_112826` |
+| `body_part` | `string (classes)` | Anatomical region label — 20 distinct classes including Abdomen, Brain, Oral cavity, Others, etc. |
+| `conversations` | `string (JSON)` | A two-turn dialogue: a `human` question about the image, and a `gpt` response with a detailed clinical description |
+| `image` | `image` | The accompanying medical figure (width range: 8px – 5,690px) |
+
+
 
 ---
 
