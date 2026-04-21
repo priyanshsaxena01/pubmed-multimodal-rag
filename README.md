@@ -1,10 +1,5 @@
-Here is a complete, professional, and detailed `README.md` for your GitHub repository. It covers the entire hybrid architecture, from the DGX hardware to the cloud deployment, making it an excellent showcase for your engineering portfolio.
 
-You can copy and paste this directly into your repository.
-
------
-
-# 🏥 Qwen3-VL PubMed Multimodal RAG Pipeline
+# Qwen3-VL PubMed Multimodal RAG Pipeline
 
 An end-to-end Medical Visual Question Answering (VQA) and Multimodal Retrieval-Augmented Generation (RAG) system. This project leverages a custom-fine-tuned **Qwen3-VL-8B-Instruct** model, grounded in clinical literature and medical imaging from PubMed.
 
@@ -12,7 +7,7 @@ It features a unique **Hybrid Cloud Architecture**, isolating heavy multi-GPU in
 
 -----
 
-## 🏗️ Hybrid Cloud Architecture
+## Hybrid Cloud Architecture
 
 To optimize compute costs and bypass restrictive university firewalls, this project splits the processing pipeline across two distinct environments bridged by secure tunnels.
 
@@ -31,7 +26,7 @@ To optimize compute costs and bypass restrictive university firewalls, this proj
 
 -----
 
-## ✨ Key Features
+## Key Features
 
   - **Multimodal Understanding:** Processes both complex clinical text queries and medical imagery (diagrams, scans, figures).
   - **PubMed Grounding:** Utilizes a FAISS-backed RAG pipeline to retrieve relevant medical literature before generating responses, reducing hallucinations.
@@ -40,7 +35,7 @@ To optimize compute costs and bypass restrictive university firewalls, this proj
 
 -----
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```text
 ├── qwen-pubmed-merged/       # (Ignored) Merged VLM weights
@@ -55,7 +50,7 @@ To optimize compute costs and bypass restrictive university firewalls, this proj
 
 -----
 
-## 🚀 Deployment Guide
+## Deployment Guide
 
 ### Phase 1: Start the DGX Compute Backend
 
@@ -117,7 +112,7 @@ streamlit run frontend.py --server.port=80
 
 -----
 
-## 📊 Model Information
+## Model Information
 
 For comprehensive details on training hyperparameters, evaluation metrics, and dataset curation, please view the [Model Card](https://huggingface.co/) for this project.
 
