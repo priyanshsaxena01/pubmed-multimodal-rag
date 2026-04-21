@@ -1,7 +1,7 @@
 
 # Qwen3-VL PubMed Multimodal RAG Pipeline
 
-An end-to-end Medical Visual Question Answering (VQA) and Multimodal Retrieval-Augmented Generation (RAG) system. This project leverages a custom-fine-tuned **Qwen3-VL-8B-Instruct** model, grounded in clinical literature and medical imaging from PubMed.
+An end-to-end Medical Visual Question Answering (VQA) and Multimodal Retrieval-Augmented Generation (RAG) system. This project leverages a custom-fine-tuned **Qwen3-VL-4B-Instruct** model, grounded in clinical literature and medical imaging from PubMed.
 
 It features a unique **Hybrid Cloud Architecture**, isolating heavy multi-GPU inference on institutional hardware (NVIDIA DGX) while serving a highly available, low-latency Streamlit frontend via the public cloud.
 
