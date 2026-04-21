@@ -1,8 +1,31 @@
-# PubMed Multimodal RAG 🩺
+# PubMed Multimodal RAG - DomainBot 🩺
+## ML-DL-Ops 
 
+**Name:** Priyansh Saxena , Anchitya Kumar
+**Roll Number:** B22EE075 , B22BB009
 
+---
 
-[Hugging-Face Finetuned Qwen3-VL-4B-PubMed](https://huggingface.co/b22ee075/Qwen3-VL-4B-PubMed)
+## 🔗 Project Links
+
+- 🤗 **Fine-Tuned Model (Hugging Face):**  
+  https://huggingface.co/b22ee075/Qwen3-VL-4B-PubMed  
+
+- 🧠 **Original Qwen Models:**
+  - Qwen3-VL-4B-Instruct: https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct  
+  - Qwen3-VL-Embedding-2B: https://huggingface.co/Qwen/Qwen3-VL-Embedding-2B  
+  - Qwen3-VL-Reranker-2B: https://huggingface.co/Qwen/Qwen3-VL-Reranker-2B  
+
+- 📊 **Weights & Biases Training Logs:**  
+  [<WANDB_RUN_LINK>](https://wandb.ai/priyansh-saxena/pubmed-multimodal-rag/workspace)
+
+- 🌐 **Live Deployment (Render):**  
+  [<RENDER_APP_LINK>](https://pubmed-rag-ui-v1.onrender.com/)
+
+- ☁️ **GCP / Kubernetes Endpoint:**  
+  [<GCP_LOADBALANCER_IP_OR_URL>](http://34.100.147.140/)
+
+---
 
 ## Overview
 
