@@ -37,7 +37,7 @@ This repository contains the codebase for a highly advanced clinical AI assistan
 * **Dynamic Multimodal RAG**: Allows users to upload clinical notes (PDF, TXT) and medical images (PNG, JPG, JPEG) to dynamically update the system's knowledge base.
 * **Vision Scan**: Enables users to process and view multiple medical images for visual queries.
 * **Advanced Embeddings & Reranking**: Utilizes `Qwen3-VL-Embedding-2B` for generating multimodal embeddings and `Qwen3-VL-Reranker-2B` for high-precision document reranking.
-* **Strict Clinical Constraints**: The AI is strictly programmed to base answers on the extracted context, state if an answer cannot be determined, output clear bullet points, and refrain from providing definitive medical diagnoses.
+* **Strict Clinical Constraints**: The Model is strictly programmed to base answers on the extracted context, state if an answer cannot be determined, output clear bullet points, and refrain from providing definitive medical diagnoses.
 * **Custom Fine-Tuned Model**: The core generation engine is built on the `Qwen3-VL-4B-Instruct` architecture and fine-tuned specifically on the `PubMedVision-enhanced-z000` dataset.
 * **Hybrid Cloud Architecture**: Isolates heavy multi-GPU inference on institutional DGX hardware while serving a highly available, low-latency Streamlit frontend via the public cloud (Render/Docker Hub).
 * **Kubernetes-Native Deployment**: Production-grade deployment on Google Kubernetes Engine with autoscaling, load balancing, and public endpoint exposure.
