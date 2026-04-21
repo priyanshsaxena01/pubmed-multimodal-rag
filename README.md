@@ -16,7 +16,7 @@ This repository contains the codebase for a highly advanced clinical AI assistan
 
 ---
 
-## 🏗️ System Architecture & Components
+## System Architecture & Components
 
 The project consists of several independent but heavily integrated components separated into a backend compute environment and a frontend cloud environment:
 
@@ -56,7 +56,7 @@ The project consists of several independent but heavily integrated components se
 
 ---
 
-## 📂 Submodule: Qwen3-VL Wrapper (`qwen3_vl_wrapper/`)
+## Submodule: Qwen3-VL Wrapper (`qwen3_vl_wrapper/`)
 
 The project bundles the official Qwen3-VL-Embedding and Reranker tools for local usage.
 
@@ -66,7 +66,7 @@ The project bundles the official Qwen3-VL-Embedding and Reranker tools for local
 
 ---
 
-## 🚀 Deployment Guide
+## Deployment Guide
 
 This system supports two deployment modes: a **Hybrid Cloud** approach for direct cloud hosting, and a **Kubernetes** deployment on Google Cloud Platform for production-grade scalability.
 
